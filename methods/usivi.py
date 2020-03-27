@@ -34,6 +34,6 @@ def usivi(data, model, history, indices, batch_ratio, step_delta, burn_iters, sa
         # Average the log-joint
         logp += logpxz/mc_samples
 
-        logpxz.backward(Dlogqz.sum(dim=1))
+        # How combine Dlogpxz and Dlogqz ??
 
     return logp.mean().item(), None
