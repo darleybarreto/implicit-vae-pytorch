@@ -1,4 +1,4 @@
-## Vae-Pytorch
+## Implicit-Vae-Pytorch
 
 This repository has two implementations of Semi-Implicit Variational Autoencoders (not finished yet):
 1. The original [Semi-Implicit Variational Inference](https://arxiv.org/pdf/1805.11183.pdf) paper and offitial [github](https://github.com/mingzhang-yin/SIVI) repo I used to reimplement.
