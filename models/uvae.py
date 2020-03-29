@@ -34,6 +34,7 @@ class UVAE(nn.Module):
             nn.Linear(self.hidden_dim_enc,z_dim)
         )
 
+        # Learning the sqrt(\Sigma)
         self.sigma = nn.Parameter(0.5 * torch.ones((1, z_dim)))
 
         # decoder p_\phi(x|z) #
@@ -49,19 +50,23 @@ class UVAE(nn.Module):
 
     def forward(self, x, epsilon=None):
         if epsilon is None:
+            dim_to_cat = 1
+
             # u_s ~ q(u)
             u = self.q_u.sample((x.size(0), self.z_dim))
             
             # \epsilon_s ~ q(\epsilon)
             epsilon = self.q_eps.sample((x.size(0), self.z_dim))
+        
         else:
+            dim_to_cat = 2
             u = None
 
         # z_s = h_\theta(u_s; \epsilon_s)
-        mu_eps = self.mu_eps(torch.cat([x,epsilon],dim=1))
+        mu_eps = self.mu_eps(torch.cat([x,epsilon],dim=dim_to_cat))
 
         if not u is None:
-            z = mu_eps + F.softplus(self.sigma)*u
+            z = mu_eps + self.sigma*u
         else:
             z = None
 
@@ -70,18 +75,16 @@ class UVAE(nn.Module):
     def q_z_e_logdensity(self,x,z,epsilon):
         k = epsilon.size(1)
 
-        mu_eps = self.mu_eps(torch.cat([x,epsilon],dim=1))
+        inputs = torch.cat([x,epsilon],dim=1)
+        mu_eps = self.mu_eps(inputs)
 
-        diff = (z - mu_eps)/F.softplus(self.sigma)
-        diff_pow = torch.pow(diff,2)
+        diff_pow = ((z - mu_eps)/self.sigma)**2
         
-        q_z_e_logdensity = - 0.5*torch.sum( diff_pow, 1) - 0.5*torch.sum(epsilon*epsilon, 1)
+        q_z_e_logdensity = - 0.5*torch.sum( diff_pow, 1) - 0.5*torch.sum(epsilon**2, 1)
 
-        deltas = diff/F.softplus(self.sigma)
-        gradepsilon = torch.autograd.grad(deltas,x,grad_outputs=torch.ones(deltas.shape).to(self.device),retain_graph=True)[0]
-        gradepsilon = gradepsilon[:,gradepsilon.size(1) - k:]
+        gradepsilon = torch.autograd.grad(q_z_e_logdensity,inputs,grad_outputs=torch.ones(q_z_e_logdensity.shape).to(self.device),retain_graph=True)[0]
 
-        return q_z_e_logdensity, gradepsilon - epsilon
+        return q_z_e_logdensity, gradepsilon[:,x.size(1):]
 
     def p_x_z_logdensity(self,x,z):
         x_hat = self.p_phi(z)

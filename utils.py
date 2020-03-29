@@ -49,12 +49,12 @@ def compute_llh_vae(T, S, model, test_data):
             z, _ = model(repeated_data2)
             
             # Approximate log q(z)
-            d1 = tr_epsilon_all/F.softplus(model.sigma)
-            d2 = z/F.softplus(model.sigma)
+            d1 = tr_epsilon_all/model.sigma
+            d2 = z/model.sigma
 
             diffs2 = ((-2*d1*d2.transpose(1,0))+torch.sum(d1*d1,dim=1))+torch.sum(d2*d2,dim=1).transpose(1,0)
 
-            logq = - 0.5*z_dim*math.log2(2*math.pi) - torch.sum(torch.log(F.softplus(model.sigma))) - 0.5*diffs2
+            logq = - 0.5*z_dim*math.log2(2*math.pi) - torch.sum(torch.log(model.sigma)) - 0.5*diffs2
             logq = torch.logsumexp(logq,dim=0).transpose(1,0) - math.log2(T)
             
             # Evaluate the log-joint

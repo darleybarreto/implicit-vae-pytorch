@@ -1,9 +1,10 @@
 import torch
 
 def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_frog):
-    z = z
-    current_q = current_q
+    current_q = current_q.detach()
+    z = z.detach()
 
+    z = z
     N, n = current_q.shape
 
     accept_hist = torch.zeros((burn+samp_iters, N),device=model.device) 
@@ -17,7 +18,7 @@ def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_fro
         z = current_q
         
         extra_outputs['delta'] = step_delta
-        extra_outputs['accRate'] = 0
+        extra_outputs['acc_rate'] = 0
 
         return z, samples, extra_outputs
 
@@ -27,8 +28,8 @@ def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_fro
 
     for i in range(burn + samp_iters):
         # compute the hamiltonian
-        q = current_q                               # initial position
-        p = torch.randn((N,n),device=model.device)    # sample initial momentum
+        q = current_q                                   # initial position
+        p = torch.randn((N,n),device=model.device)      # sample initial momentum
 
         current_p = p
 
@@ -63,8 +64,8 @@ def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_fro
         p = -p
 
         # Evaluate potential and kinetic energies at start and end of trajectory
-        current_K = torch.sum(torch.pow(current_p,2), 1)/2
-        proposed_K = torch.sum(torch.pow(p,2), 1)/2 
+        current_K = torch.sum(current_p**2, 1)/2
+        proposed_K = torch.sum(p**2, 1)/2 
 
         # Accept or reject the state at end of trajectory, returning either
         # the position at the end of the trajectory or the initial position

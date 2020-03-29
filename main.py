@@ -70,7 +70,7 @@ if __name__ == "__main__":
 		m_s_b_val, losses_v = mean_stochastic_bound = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
 		print("Mean Stochastic Bound val:",m_s_b_val)
 
-		if len(losses_v)==0 and epoch%100 == 0:
+		if len(losses_v)==0 and epoch%30 == 0:
 			if epoch == args.epoches - 1:
 				T = 10000
 				S = 1000
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
 			print(f"Value of mean Log Likelihood on val dataset for epoch {epoch} is {mean_px}")
 
-		elif len(losses_v)>0 and epoch%100 == 0:
+		elif len(losses_v)>0 and epoch%30 == 0:
 			mean_l = sum(losses_v)/len(losses_v)
 			
 			print(f"Value of mean DKL on val dataset for epoch {epoch} is {mean_l}")
