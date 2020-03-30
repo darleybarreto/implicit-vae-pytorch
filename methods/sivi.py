@@ -9,4 +9,4 @@ def sivi(data, model, optimizer, J, K, warm_up):
     
     optimizer.step()
 
-    return logpz, loss
+    return logpz.mean().item(), loss

@@ -15,8 +15,8 @@ from utils import Binarize, Dataset, compute_llh_vae
 
 
 parser = argparse.ArgumentParser(description='PyTorch Implementation of Unbiased Implicit Variational Inference (UIVI')
-parser.add_argument('-m','--model', type=str, default="uvae", choices=['uvae','vae'],
-					help='Specify the model. It can take on one of these values: [uvae,vae]')
+parser.add_argument('-m','--model', type=str, default="uvae", choices=['uvae','svae'],
+					help='Specify the model. It can take on one of these values: [uvae,svae]')
 parser.add_argument('-d','--dataset', type=str, default="bmnist", choices=['bmnist', 'fashionmnist'],
 					help='Indicate the dataset. It can take on one of these values: [bmnist, fashionmnist]')
 parser.add_argument('-n','--method', type=str, default="usivi", choices=['sivi', 'usivi'],
@@ -30,7 +30,7 @@ parser.add_argument('-k','--K', type=int, default=1,help='number of samples for 
 parser.add_argument('-t','--train', action='store_true', default=False,help='If it is train or test')
 
 methods = {'usivi':usivi,'sivi':sivi}
-models = {'uvae':models.UVAE}
+models = {'uvae':models.UVAE, 'svae': models.SIVAE}
 
 datasets = {'bmnist':torch_datasets.MNIST, 'fashionmnist': torch_datasets.FashionMNIST}
 
