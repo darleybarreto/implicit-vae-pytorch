@@ -32,37 +32,38 @@ def compute_llh_vae(T, S, model, test_data):
     # Compute an importance sampling estimate of the log-evidence on test
     #  T: number of samples for the log q(z) term
     #  S: number of samples for the importance sampling approximation
-    model.eval()
+    model.eval()   
+    
+    logp = 0
 
     px = torch.zeros(len(test_data),1)
     z_dim = model.z_dim
 
     with torch.no_grad():
         for ns in range(len(test_data)):
-            # Sample epsilon and pass through the NN
 
+            # Sample epsilon and pass through the NN
             repated_data = test_data[ns].repeat(T,*(test_data[ns].squeeze().shape))
-            _, tr_epsilon_all = model(repated_data)
+            _, eps_samples = model(repated_data)
             
             # Sample z
             repeated_data2 = test_data[ns].repeat(S,*(test_data[ns].squeeze().shape))
             z, _ = model(repeated_data2)
             
             # Approximate log q(z)
-            d1 = tr_epsilon_all/model.sigma
-            d2 = z/model.sigma
+            diff_pow = torch.sum(((z - eps_samples)/(model.sigma**2))**2, dim=1)
 
-            diffs2 = ((-2*d1*d2.transpose(1,0))+torch.sum(d1*d1,dim=1))+torch.sum(d2*d2,dim=1).transpose(1,0)
-
-            logq = - 0.5*z_dim*math.log2(2*math.pi) - torch.sum(torch.log(model.sigma)) - 0.5*diffs2
+            logq = - 0.5*z_dim*math.log2(2*math.pi) - torch.sum(torch.log(model.sigma**2)) - 0.5*diff_pow
             logq = torch.logsumexp(logq,dim=0).transpose(1,0) - math.log2(T)
             
             # Evaluate the log-joint
-            logjoint = model.p_x_z_logdensity(repeated_data2, z)
+            logpxz = model.p_x_z_logdensity(repeated_data2, z)
             
+            logp += logpxz.mean().item()/S
+
             # Importance sampling term
-            px[ns] = torch.logsumexp(logjoint - logq, dim=0) - math.log2(S)
+            px[ns] = torch.logsumexp(logpxz - logq, dim=0) - math.log2(S)
 
     mean_px = torch.mean(px).item()
 
-    return mean_px
+    return logp, mean_px

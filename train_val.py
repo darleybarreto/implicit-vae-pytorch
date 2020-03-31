@@ -23,8 +23,9 @@ def train_val(history,loader,method,model,device,optimizer,epoch,args,train=True
 
         extra_args = {'K':args.K,"J":J,'warm_up':warm_up}
 
-    tot_data = len(loader)*args.batch_size
-    to_log = tot_data//60000
+    tot_data = len(loader)
+    to_log = tot_data//2
+    # to_log = tot_data//10
 
     stochastic_bound = []
     losses = []
@@ -51,14 +52,14 @@ def train_val(history,loader,method,model,device,optimizer,epoch,args,train=True
             if args.method == 'usivi':
                 extra_args.update({'indices': indices})
 
-            logp, loss = method(data, model, optimizer, **extra_args)
+            logp, loss = method(data, model, optimizer, split, **extra_args)
 
             stochastic_bound.append(logp)
             losses.append(loss)
 
             if i%to_log == 0:
                 
-                print(f"Epoch: {epoch}/{args.epoches} | Iteraton Log: {i}/{to_log} | Loss: {loss} | Log[p(x)]: {logp}")
+                print(f"Epoch: {epoch}/{args.epoches} | Iteraton Log: {i}/{tot_data} | Loss: {loss} | Log[p(x)]: {logp}")
     
     print("===================")
                 

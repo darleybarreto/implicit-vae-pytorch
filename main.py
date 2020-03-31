@@ -67,10 +67,7 @@ if __name__ == "__main__":
 		m_s_b_train, losses_t = train_val(history['train'],train_loader,method,model,device,optimizer,epoch,args)
 		print("Mean Stochastic Bound train:",m_s_b_train)
 
-		m_s_b_val, losses_v = mean_stochastic_bound = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
-		print("Mean Stochastic Bound val:",m_s_b_val)
-
-		if len(losses_v)==0 and epoch%30 == 0:
+		if len(losses_t)==0:
 			if epoch == args.epoches - 1:
 				T = 10000
 				S = 1000
@@ -79,13 +76,33 @@ if __name__ == "__main__":
 				T = 500
 				S = 100
 
-			mean_px = compute_llh_vae(T, S, model, val_loader)
-			llh_test.append(mean_px)
+			if epoch%30 == 0:
+				m_s_b_val, mean_px = compute_llh_vae(T, S, model, val_loader)
+				llh_test.append(mean_px)
+			
+			else:
+				m_s_b_val, all_px = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
 
-			print(f"Value of mean Log Likelihood on val dataset for epoch {epoch} is {mean_px}")
+				mean_px = sum(all_px)/len(all_px)
 
-		elif len(losses_v)>0 and epoch%30 == 0:
+			print(f"Mean Stochastic Bound val: {mean_px}")
+
+			print(f"Value of mean DKL on val dataset for epoch {epoch} is {mean_px}")
+
+		elif len(losses_t)>0:
+			m_s_b_val, losses_v = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
+			print("Mean Stochastic Bound val:",m_s_b_val)
+
 			mean_l = sum(losses_v)/len(losses_v)
 			
 			print(f"Value of mean DKL on val dataset for epoch {epoch} is {mean_l}")
 
+		print()
+
+	if len(llh_test) > 0:
+		print(10*'=')
+		print(f"{5*'='} USIVI {5*'='}")
+
+		print(f"Mean Log Lik. on {len(llh_test)} epochs is", sum(llh_test)/len(llh_test))
+		
+		print(10*'=')

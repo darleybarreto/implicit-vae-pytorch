@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from .hmc import hmc
 
-def usivi(data, model, optimizer, history, indices, batch_ratio, step_delta, burn_iters, samp_iters, leap_frog, mc_samples, adapt):
+def usivi(data, model, optimizer, split, history, indices, batch_ratio, step_delta, burn_iters, samp_iters, leap_frog, mc_samples, adapt):
     logp = 0
     losses = 0
 
@@ -38,9 +38,10 @@ def usivi(data, model, optimizer, history, indices, batch_ratio, step_delta, bur
         # Perform backward pass
         loss = -(logpxz - logqz)
 
-        loss.backward()
+        if 'Training' == split:
+            loss.backward()
 
-        optimizer.step()
+            optimizer.step()
 
         # Final loss
         losses += loss.item()/mc_samples

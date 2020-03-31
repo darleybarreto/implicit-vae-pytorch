@@ -97,7 +97,7 @@ class SIVAE(nn.Module):
         psi_iw_star = torch.cat((psi_iw_star_,psi_iw.unsqueeze(dim=2)), dim=2)
 
         ker = torch.exp(-0.5*torch.sum(torch.pow(z_sample_iw_expanded-psi_iw_star,2)/torch.pow(sigma_iw2+EPS,2),3))
-        log_H_iw = torch.log(torch.mean(ker,dim=2))-0.5*torch.sum(z_logv_iw,dim=2)
+        log_H_iw = torch.log(torch.exp(torch.mean(ker,dim=2)))-0.5*torch.logsumexp(z_logv_iw,dim=2)
 
         log_prior_iw = -0.5*torch.sum(z_sample_iw**2,2)
 
@@ -112,5 +112,4 @@ class SIVAE(nn.Module):
                     + (1-x_iw) * torch.log(1 - reconstruct_iw + EPS),2)
 
         loss_iw = -torch.logsumexp(log_lik_iw+(log_prior_iw-log_H_iw)*warm_up,1)+torch.log(torch.tensor(K).to(self.device).float())
-
         return reconstruct_iw, log_lik_iw, loss_iw.mean()
