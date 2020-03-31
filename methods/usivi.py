@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from .hmc import hmc
 
-def usivi(data, model, optimizer, split, history, indices, batch_ratio, step_delta, burn_iters, samp_iters, leap_frog, mc_samples, adapt):
+def usivi(data, model, optimizer, scheduler, split, history, indices, batch_ratio, step_delta, burn_iters, samp_iters, leap_frog, mc_samples, adapt):
     logp = 0
     losses = 0
 
@@ -15,15 +15,12 @@ def usivi(data, model, optimizer, split, history, indices, batch_ratio, step_del
 
         history['accept_hist'][:, indices] += batch_ratio*extra_outputs['accept_hist']/(samp_iters*mc_samples)
         history['acc_rate'][indices] += batch_ratio*extra_outputs['acc_rate']/(samp_iters*mc_samples)
-        
         step_delta = extra_outputs['delta']
+
+        if 'Training' == split:
+            optimizer.zero_grad()
+
         Tr_epsilon_t = torch.zeros((data.size(0), z.size(1)), device=model.device, requires_grad=True)
-
-        # for j in range(samp_iters):
-        #     epsilon_j = samples[j]
-
-        #     _, eps_j = model(data,epsilon_j)
-        #     Tr_epsilon_t = Tr_epsilon_t + eps_j / samp_iters
 
         data_expd = data.unsqueeze(dim=0).repeat(samp_iters, 1, 1)
         _, eps_samples = model(data_expd,samples)
@@ -38,10 +35,11 @@ def usivi(data, model, optimizer, split, history, indices, batch_ratio, step_del
         # Perform backward pass
         loss = -(logpxz - logqz)
 
-        if 'Training' == split:
+        if 'Training' == split:    
             loss.backward()
 
             optimizer.step()
+            scheduler.step()
 
         # Final loss
         losses += loss.item()/mc_samples

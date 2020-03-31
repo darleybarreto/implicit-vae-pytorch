@@ -75,7 +75,7 @@ def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_fro
 
         ind = accept==1
 
-        if len(ind) > 0:
+        if torch.any(ind):
             current_q[ind,:] = q[ind,:]
             current_U[ind] = proposed_U[ind]
 
@@ -95,5 +95,5 @@ def hmc(data, z, current_q, model, step_delta, burn, samp_iters, adapt, leap_fro
     extra_outputs['accept_hist'] = accept_hist
     extra_outputs['delta'] = step_delta 
     extra_outputs['acc_rate'] = torch.mean(accept_hist, dim=0)
-
+    
     return samples.detach(), extra_outputs

@@ -1,4 +1,5 @@
 import argparse
+from statistics import mean
 
 from torchvision import transforms
 from torchvision import datasets as torch_datasets
@@ -25,7 +26,7 @@ parser.add_argument('-b','--burn', type=int, default=5,help='Number of burning i
 parser.add_argument('-s','--sampling', type=int, default=5,help='Number of samples obtained in the HMC procedure for the reverse conditional')
 parser.add_argument('--mcmc-samples', type=int, default=5, metavar="MS",help='Number of samples to be drawn from HMCMC')
 parser.add_argument('--batch-size', type=int, default=100, metavar="BTCH",help='Minibatch size')
-parser.add_argument('-e','--epoches', type=int, default=100,help='Number of epoches to run')
+parser.add_argument('-e','--epoches', type=int, default=135,help='Number of epoches to run')
 parser.add_argument('-k','--K', type=int, default=1,help='number of samples for importance weight sampling')
 parser.add_argument('-t','--train', action='store_true', default=False,help='If it is train or test')
 
@@ -54,7 +55,18 @@ if __name__ == "__main__":
 	val_loader = torch.utils.data.DataLoader(dataset(False), **kwargs)
 
 	model = model.to(device)
-	optimizer = torch.optim.Adam(model.parameters())
+
+	if args.method == 'usivi':
+		optimizer = torch.optim.Adam([
+			{'params':model.mu_eps.parameters(), 'lr':1e-3},
+			{'params':model.sigma, 'lr':2*1e-4},
+			{'params':model.p_phi.parameters(),'lr':1e-3},
+		])
+		scheduler = torch.optim.lr_scheduler.StepLR(optimizer,step_size=3000, gamma=0.9)
+
+	else:
+		optimizer = torch.optim.Adam(model.parameters())
+		scheduler = None
 	
 	history = {}
 	for split in ['train', 'val']:
@@ -62,12 +74,18 @@ if __name__ == "__main__":
 						  'acc_rate' : torch.zeros(len(train_loader)*args.batch_size).to(device)}
 
 	llh_test = []
-
+	pxs = []
+	elbo = []
+	
 	for epoch in range(args.epoches):
-		m_s_b_train, losses_t = train_val(history['train'],train_loader,method,model,device,optimizer,epoch,args)
-		print("Mean Stochastic Bound train:",m_s_b_train)
+		m_s_b_train, losses_t = train_val(history['train'],train_loader,method,model,device,optimizer,scheduler,epoch,args)
+		
+		print("Mean Stochastic Bound train:",mean(m_s_b_train))
+		print(f"Value of mean DKL on train dataset for epoch {epoch} is {mean(losses_t)}")
 
-		if len(losses_t)==0:
+		val_opt = 'mean DKL'
+
+		if args.method == 'usivi':
 			if epoch == args.epoches - 1:
 				T = 10000
 				S = 1000
@@ -76,33 +94,48 @@ if __name__ == "__main__":
 				T = 500
 				S = 100
 
-			if epoch%30 == 0:
-				m_s_b_val, mean_px = compute_llh_vae(T, S, model, val_loader)
-				llh_test.append(mean_px)
-			
+			if epoch%30 == 0 or epoch == args.epoches - 1:
+				logjoint, marginal = compute_llh_vae(T, S, model, val_loader)
+				llh_test.append(marginal)
+
+				mean_l = mean(marginal)
+				val_opt = 'marginal'
+
 			else:
-				m_s_b_val, all_px = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
+				logjoint, elbo = train_val(history['val'],val_loader,method,model,device,optimizer,scheduler,epoch,args,train=False)
+				mean_l = mean(elbo)
 
-				mean_px = sum(all_px)/len(all_px)
+		else:
+			logjoint, elbo = train_val(history['val'],val_loader,method,model,device,optimizer,scheduler,epoch,args,train=False)
+			mean_l = mean(elbo)
 
-			print(f"Mean Stochastic Bound val: {mean_px}")
+		m_joint = mean(logjoint)
 
-			print(f"Value of mean DKL on val dataset for epoch {epoch} is {mean_px}")
-
-		elif len(losses_t)>0:
-			m_s_b_val, losses_v = train_val(history['val'],val_loader,method,model,device,optimizer,epoch,args,train=False)
-			print("Mean Stochastic Bound val:",m_s_b_val)
-
-			mean_l = sum(losses_v)/len(losses_v)
-			
-			print(f"Value of mean DKL on val dataset for epoch {epoch} is {mean_l}")
-
+		print("Mean Stochastic Bound val:",m_joint)
+		print(f"Value of {val_opt} on val dataset for epoch {epoch} is {mean_l}")
 		print()
+
+		if val_opt != 'marginal':
+			elbo.append(mean_l)
+
+		pxs.append(m_joint)
+
+	best_elbo = min(elbo)
+	idx = elbo.index(best_elbo)
+	print(f"The best val Loss was {best_elbo} at epoch {idx}")
+
+	best_pxs = max(pxs)
+	idx = pxs.index(best_pxs)
+	print(f"The best val log likelihood was {best_pxs} at epoch {idx}")
 
 	if len(llh_test) > 0:
 		print(10*'=')
 		print(f"{5*'='} USIVI {5*'='}")
 
-		print(f"Mean Log Lik. on {len(llh_test)} epochs is", sum(llh_test)/len(llh_test))
-		
+		print(f"Marginal on {len(llh_test)} epochs is", mean(llh_test))
+
+		best_llh = max(llh_test)
+		idx = llh_test.index(best_llh)
+
+		print(f"The best marginal was {best_llh} at {idx}")
 		print(10*'=')
