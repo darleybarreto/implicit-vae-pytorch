@@ -15,7 +15,7 @@ from train_val import train_val
 from utils import Binarize, Dataset, compute_llh_vae
 
 
-parser = argparse.ArgumentParser(description='PyTorch Implementation of Unbiased Implicit Variational Inference (UIVI')
+parser = argparse.ArgumentParser(description='PyTorch Implementation of a couple methods on Semi-Implicit Variational Inference')
 parser.add_argument('-m','--model', type=str, default="uvae", choices=['uvae','svae'],
 					help='Specify the model. It can take on one of these values: [uvae,svae]')
 parser.add_argument('-d','--dataset', type=str, default="bmnist", choices=['bmnist', 'fashionmnist'],
