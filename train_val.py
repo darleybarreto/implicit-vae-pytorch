@@ -6,7 +6,7 @@ def train_val(history,loader,method,model,device,optimizer,scheduler,epoch,args,
     if args.method == 'usivi':
         extra_args = {'history':history,
                     'batch_ratio':len(loader)/args.batch_size,
-                    'step_delta':0.2,
+                    'step_delta':0.5/args.dim_z,
                     'adapt':1,
                     'leap_frog':5,
                     'burn_iters':args.burn,
@@ -15,15 +15,14 @@ def train_val(history,loader,method,model,device,optimizer,scheduler,epoch,args,
     else:
         if epoch<1900:
             J = 1
-            warm_up = min([epoch/300,1])
 
         else:
             J = 50
-            warm_up = 1
 
-        extra_args = {'K':args.K,"J":J,'warm_up':warm_up}
+        extra_args = {'K':args.K,"J":J}
 
     tot_data = len(loader)
+    
     # to_log = tot_data//2
     to_log = tot_data//10
 

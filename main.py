@@ -16,12 +16,11 @@ from utils import Binarize, Dataset, compute_llh_vae
 
 
 parser = argparse.ArgumentParser(description='PyTorch Implementation of a couple methods on Semi-Implicit Variational Inference')
-parser.add_argument('-m','--model', type=str, default="uvae", choices=['uvae','svae'],
-					help='Specify the model. It can take on one of these values: [uvae,svae]')
 parser.add_argument('-d','--dataset', type=str, default="bmnist", choices=['bmnist', 'fashionmnist'],
 					help='Indicate the dataset. It can take on one of these values: [bmnist, fashionmnist]')
 parser.add_argument('-n','--method', type=str, default="usivi", choices=['sivi', 'usivi'],
 					help='Specify the method. It can take on one of these values: [sivi, usivi]')
+parser.add_argument('-z','--z-dim', type=int, default=0,help='Number dimension of the latent space. If none passed, defaults will be used')					
 parser.add_argument('-b','--burn', type=int, default=5,help='Number of burning iterations for the HMC chain')
 parser.add_argument('-s','--sampling', type=int, default=5,help='Number of samples obtained in the HMC procedure for the reverse conditional')
 parser.add_argument('--mcmc-samples', type=int, default=5, metavar="MS",help='Number of samples to be drawn from HMCMC')
@@ -31,7 +30,7 @@ parser.add_argument('-k','--K', type=int, default=1,help='number of samples for 
 parser.add_argument('-t','--train', action='store_true', default=False,help='If it is train or test')
 
 methods = {'usivi':usivi,'sivi':sivi}
-models = {'uvae':models.UVAE, 'svae': models.SIVAE}
+models = {'usivi':models.UVAE, 'sivi': models.SIVAE}
 
 datasets = {'bmnist':torch_datasets.MNIST, 'fashionmnist': torch_datasets.FashionMNIST}
 
@@ -44,9 +43,11 @@ if __name__ == "__main__":
 
 	assert args.method in methods, f"Method not found, {args.method}"
 	method = methods[args.method]
-
-	assert args.model in models, f"Model not found, {args.model}"
-	model = models[args.model](in_dim=784,device=device)
+	
+	if args.z_dim > 0:
+		model = models[args.model](in_dim=784,z_dim=args.z_dim,device=device)
+	else:
+		model = models[args.model](in_dim=784,device=device)
 
 	assert args.dataset in datasets, f"Model not found, {args.dataset}"
 	dataset = lambda is_train: Dataset(datasets[args.dataset]('data/', train=is_train, download=True,transform=transforms.Compose([transforms.ToTensor(), Binarize()])))

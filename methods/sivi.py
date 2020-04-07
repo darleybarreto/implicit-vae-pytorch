@@ -2,7 +2,7 @@ import torch
 
 import torch.nn.functional as F
 
-def sivi(data, model, optimizer, scheduler, split, J, K, warm_up):
+def sivi(data, model, optimizer, scheduler, split, J, K):
     if 'Training' == split:
         optimizer.zero_grad()
 

@@ -7,26 +7,34 @@ This repository has two implementations of Semi-Implicit Variational Autoencoder
 ### Usage
 ```
 $ python3 main.py
-  -h, --help            show this help message and exit
-  -m {uvae,svae}, --model {uvae,svae}
-                        Specify the model. It can take on one of these values:
-                        [uvae,svae]
   -d {bmnist,fashionmnist}, --dataset {bmnist,fashionmnist}
-                        Indicate the dataset. It can take on one of these
-                        values: [bmnist, fashionmnist]
+                              Indicate the dataset. It can take on one of these
+                              values: [bmnist, fashionmnist]
+
   -n {sivi,usivi}, --method {sivi,usivi}
-                        Specify the method. It can take on one of these
-                        values: [sivi, usivi]
-  -b BURN, --burn BURN  Number of burning iterations for the HMC chain
+                              Specify the method. It can take on one of these
+                              values: [sivi, usivi]
+
+  -z Z_DIM, --z-dim Z_DIM
+                              Number dimension of the latent space. If none passed,
+                              defaults will be used
+
+  -b BURN, --burn BURN        Number of burning iterations for the HMC chain
+
   -s SAMPLING, --sampling SAMPLING
-                        Number of samples obtained in the HMC procedure for
-                        the reverse conditional
-  --mcmc-samples MS     Number of samples to be drawn from HMCMC
-  --batch-size BTCH     Minibatch size
+                              Number of samples obtained in the HMC procedure for
+                              the reverse conditional
+
+  --mcmc-samples MS           Number of samples to be drawn from HMCMC
+
+  --batch-size BTCH           Minibatch size
+
   -e EPOCHES, --epoches EPOCHES
-                        Number of epoches to run
-  -k K, --K K           number of samples for importance weight sampling
-  -t, --train           If it is train or test
+                              Number of epoches to run
+
+  -k K, --K K                 number of samples for importance weight sampling
+
+  -t, --train                 If it is train or test
 ```
 
 ### Dependencies
